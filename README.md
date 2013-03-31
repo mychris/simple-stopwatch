@@ -15,6 +15,11 @@ run
 
 in the root directory of this repository.
 
+Archlinux users can use the PKGBUILD-git file to create a package.
+
+    wget https://raw.github.com/mychris/simple-stopwatch/master/PKGBUILD-git
+    makepkg -p PKGBUILD-git
+
 Usage
 -----
 
