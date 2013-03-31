@@ -20,6 +20,7 @@
 
 import argparse
 import curses
+import signal
 import sys
 import time
 
@@ -64,7 +65,9 @@ NUMBERS = [
   ]
 ]
 
-HOURS_ALWAYS, COLOR, PAUSE, CENTER = False, 'blue', False, False
+HOURS_ALWAYS, COLOR, PAUSE, CENTER, = False, 'blue', False, False
+START, COUNTDOWN, AUTO_EXIT, COLOR_ZERO = 0, False, False, 'red'
+RUNNING = True
 
 def render_char(char, stdsrc, offset_y, offset_x):
   '''Render one character'''
@@ -140,7 +143,7 @@ def render(delta, stdsrc):
 
 def main(stdsrc):
   '''main for curses.wrapper()'''
-  global COLOR, PAUSE
+  global COLOR, PAUSE, START, COUNTDOWN, AUTO_EXIT
 
   curses.noecho()
   curses.cbreak()
@@ -159,7 +162,7 @@ def main(stdsrc):
   curses.init_pair(1, colors[COLOR], -1)
 
   start, pause_begin, pause_delta = time.time(), None, 0
-  while True:
+  while RUNNING:
     c = stdsrc.getch()
     if c == ord('q') or c == ord('Q'):
       return
@@ -170,17 +173,30 @@ def main(stdsrc):
         PAUSE = False
         pause_delta += time.time() - pause_begin
 
+    if PAUSE:
+      delta = max(pause_begin - start - pause_delta, 0)
+    else:
+      delta = max(time.time() - start - pause_delta, 0)
+
+    delta = START - delta if COUNTDOWN else START + delta
+
+    if COUNTDOWN and delta <= 0:
+      if AUTO_EXIT:
+        return True
+      delta = 0
+      curses.init_pair(1, colors[COLOR_ZERO], -1)
+
     stdsrc.erase()
     try:
-      if PAUSE:
-        delta = max(pause_begin - start - pause_delta, 0)
-      else:
-        delta = max(time.time() - start - pause_delta, 0)
       render(delta, stdsrc)
     except curses.error:
       pass
     stdsrc.refresh()
     time.sleep(0.1)
+
+def sig_handler(sig, frame):
+  global RUNNING
+  RUNNING = False
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
@@ -198,6 +214,19 @@ Press space to pause and q to exit.""",
   parser.add_argument('--center', dest='center', action='store_true',
       default=False, help='center stopwatch')
 
+  parser.add_argument('--start-at', dest='start', default=0, metavar='TIME',
+      help='start with specified time either defined as seconds or in hh:mm:ss format')
+
+  parser.add_argument('--countdown', dest='countdown', action='store_true',
+      default=False, help='use stopwatch as countdown timer')
+
+  parser.add_argument('--auto-exit', dest='auto_exit', action='store_true',
+      default=False, help='auto exit if countdown reaches zero')
+
+  parser.add_argument('--color-zero', choices=['black', 'blue', 'cyan', 'green',
+      'magenta', 'red', 'white', 'yellow', 'none'], default='red',
+      dest='color_zero', help='the color to use if countdown reaches zero')
+
   parser.add_argument('--help', action='help',
       help='show this help message and exit')
 
@@ -210,10 +239,33 @@ Press space to pause and q to exit.""",
     import locale
     locale.setlocale(locale.LC_ALL, '')
 
-  HOURS_ALWAYS, COLOR, CENTER = args.hours_always, args.color, args.center
+  START = args.start
   try:
-    curses.wrapper(main)
+    START = int(START)
+  except ValueError:
+    START = START.split(':')
+    if len(START) > 3 or any([not x.isdigit() for x in START]):
+      parser.print_help()
+      sys.exit(1)
+
+    START = ['00', '00'] + START
+    START = int(START[-1]) + (int(START[-2]) * 60) + (int(START[-3]) * 60 * 60)
+
+  HOURS_ALWAYS, COLOR, CENTER  = args.hours_always, args.color, args.center
+  COUNTDOWN, AUTO_EXIT = args.countdown, args.auto_exit
+  COLOR_ZERO = args.color_zero
+
+  for sig in (signal.SIGABRT, signal.SIGILL, signal.SIGINT, signal.SIGSEGV, signal.SIGTERM):
+    signal.signal(sig, sig_handler)
+
+  ret = False
+  try:
+    ret = curses.wrapper(main)
   except KeyboardInterrupt:
     pass
+
+  if ret:
+    sys.stdout.write('finished...\n')
+    sys.stdout.flush()
 
 # vim: ft=python ts=2 sts=2 sw=2 et:
