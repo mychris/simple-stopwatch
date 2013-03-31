@@ -20,130 +20,126 @@
 
 import argparse
 import curses
+import os
 import signal
 import sys
 import time
 
-try:
-  range = xrange
-except NameError:
-  pass
+NUMBERS = (
+  (
+    (1, 1, 1, 1, 1, 1), (1, 1, 0, 0, 1, 1), (1, 1, 0, 0, 1, 1),
+    (1, 1, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1)
+  ), (
+    (0, 0, 0, 0, 1, 1), (0, 0, 0, 0, 1, 1), (0, 0, 0, 0, 1, 1),
+    (0, 0, 0, 0, 1, 1), (0, 0, 0, 0, 1, 1)
+  ), (
+    (1, 1, 1, 1, 1, 1), (0, 0, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1),
+    (1, 1, 0, 0, 0, 0), (1, 1, 1, 1, 1, 1)
+  ), (
+    (1, 1, 1, 1, 1, 1), (0, 0, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1),
+    (0, 0, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1)
+  ), (
+    (1, 1, 0, 0, 1, 1), (1, 1, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1),
+    (0, 0, 0, 0, 1, 1), (0, 0, 0, 0, 1, 1)
+  ), (
+    (1, 1, 1, 1, 1, 1), (1, 1, 0, 0, 0, 0), (1, 1, 1, 1, 1, 1),
+    (0, 0, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1)
+  ), (
+    (1, 1, 1, 1, 1, 1), (1, 1, 0, 0, 0, 0), (1, 1, 1, 1, 1, 1),
+    (1, 1, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1)
+  ), (
+    (1, 1, 1, 1, 1, 1), (0, 0, 0, 0, 1, 1), (0, 0, 0, 0, 1, 1),
+    (0, 0, 0, 0, 1, 1), (0, 0, 0, 0, 1, 1),
+  ), (
+    (1, 1, 1, 1, 1, 1), (1, 1, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1),
+    (1, 1, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1)
+  ), (
+    (1, 1, 1, 1, 1, 1), (1, 1, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1),
+    (0, 0, 0, 0, 1, 1), (1, 1, 1, 1, 1, 1)
+  ), (
+    (0, 0), (1, 1), (0, 0), (1, 1), (0, 0)
+  )
+)
 
-__version__ = '1.0.0'
+COLORS = {
+  'black': curses.COLOR_BLACK, 'blue': curses.COLOR_BLUE,
+  'cyan': curses.COLOR_CYAN, 'green': curses.COLOR_GREEN,
+  'magenta': curses.COLOR_MAGENTA, 'red': curses.COLOR_RED,
+  'white': curses.COLOR_WHITE, 'yellow': curses.COLOR_YELLOW, 'none': -1
+}
+ 
+PAUSE, RUNNING, ARGS = False, True, {}
 
-NUMBERS = [
-  [
-    [1, 1, 1, 1, 1, 1], [1, 1, 0, 0, 1, 1], [1, 1, 0, 0, 1, 1],
-    [1, 1, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1]
-  ], [
-    [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 1],
-    [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 1]
-  ], [
-    [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1],
-    [1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]
-  ], [
-    [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1]
-  ], [
-    [1, 1, 0, 0, 1, 1], [1, 1, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 1]
-  ], [
-    [1, 1, 1, 1, 1, 1], [1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1]
-  ], [
-    [1, 1, 1, 1, 1, 1], [1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1],
-    [1, 1, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1]
-  ], [
-    [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 1],
-    [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 1],
-  ], [
-    [1, 1, 1, 1, 1, 1], [1, 1, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1],
-    [1, 1, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1]
-  ], [
-    [1, 1, 1, 1, 1, 1], [1, 1, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1]
-  ]
-]
-
-HOURS_ALWAYS, COLOR, PAUSE, CENTER, = False, 'blue', False, False
-START, COUNTDOWN, AUTO_EXIT, COLOR_ZERO = 0, False, False, 'red'
-RUNNING = True
-
-def render_char(char, stdsrc, offset_y, offset_x):
+def render_char(char, stdscr, offset_y, offset_x):
   '''Render one character'''
   global NUMBERS
 
-  if char == ':':
-    stdsrc.addstr(offset_y + 1, offset_x, '█', curses.color_pair(1))
-    stdsrc.addstr(offset_y + 1, offset_x + 1, '█', curses.color_pair(1))
-    stdsrc.addstr(offset_y + 3, offset_x, '█', curses.color_pair(1))
-    stdsrc.addstr(offset_y + 3, offset_x + 1, '█', curses.color_pair(1))
-    return 2
-
+  char = int(char) if char.isdigit() else 10
+  addstr = stdscr.addstr
+  curses_color = curses.color_pair(1)
   col, row = 0, 0
-  for arr in NUMBERS[int(char)]:
+  for arr in NUMBERS[char]:
     col = 0
     for b in arr:
       if b:
-        stdsrc.addstr(offset_y + row, offset_x + col, '█', curses.color_pair(1))
+        addstr(offset_y + row, offset_x + col, '█', curses_color)
       col += 1
     row += 1
-  return 6
+  return col
 
-def render(delta, stdsrc):
-  '''render the stdsrc'''
-  global HOURS_ALWAYS, CENTER
+def render(delta, stdscr):
+  '''render the stdscr'''
+  global ARGS, PAUSE
 
   hours, minutes, seconds = (delta / 60 / 60), (delta / 60) % 60, (delta) % 60
 
-  if hours < 1 and not HOURS_ALWAYS:
-    output_string = ('%02d:%02d' % (minutes, seconds))
+  if hours < 1 and not ARGS.hours_always:
+    output_string = '%02d:%02d' % (minutes, seconds)
   else:
-    if hours < 10:
-      output_string = ('%02d:%02d:%02d' % (hours, minutes, seconds))
-    else:
-      output_string = ('%d:%02d:%02d' % (hours, minutes, seconds))
+    output_string = '%02d:%02d:%02d' if hours < 10 else '%d:%02d:%02d'
+    output_string = output_string % (hours, minutes, seconds)
 
-  if CENTER:
-    height, width = 9, 2
-    width += len([x for x in output_string if x == ':']) * 2
-    width += len([x for x in output_string if x.isdigit()]) * 6
+  height, width = 9, 2
+  if ARGS.center:
+    width += output_string.count(':') * 2
+    width += sum(x.isdigit() for x in output_string) * 6
     width += (len(output_string) + 1) * 2
 
-    start_x = int((stdsrc.getmaxyx()[1] - width) / 2)
-    start_y = int((stdsrc.getmaxyx()[0] - height) / 2)
+    start_x = int((stdscr.getmaxyx()[1] - width) / 2)
+    start_y = int((stdscr.getmaxyx()[0] - height) / 2)
   else:
     start_x, start_y = 2, 1
 
   x, y = start_x + 3, start_y + 2
   for char in output_string:
-    x += render_char(char, stdsrc, y, x) + 2
+    x += render_char(char, stdscr, y, x) + 2
 
   x, y, max_x = start_x, start_y, x
 
-  stdsrc.addstr(y, x, '┏', curses.color_pair(1))
-  stdsrc.addstr(y + 8, x, '┗', curses.color_pair(1))
-  stdsrc.addstr(y, max_x, '┓', curses.color_pair(1))
-  stdsrc.addstr(y + 8, max_x, '┛', curses.color_pair(1))
+  curses_color = curses.color_pair(1)
+  stdscr.addstr(y, x, '┏', curses_color)
+  stdscr.addstr(y + height - 1, x, '┗', curses_color)
+  stdscr.addstr(y, max_x, '┓', curses_color)
+  stdscr.addstr(y + height - 1, max_x, '┛', curses_color)
   for i in range(x + 1, max_x):
-    stdsrc.addstr(y, i, '━', curses.color_pair(1))
-    stdsrc.addstr(y + 8, i, '━', curses.color_pair(1))
-  for i in range(y + 1, y + 8):
-    stdsrc.addstr(i, x, '┃', curses.color_pair(1))
-    stdsrc.addstr(i, max_x, '┃', curses.color_pair(1))
+    stdscr.addstr(y, i, '━', curses_color)
+    stdscr.addstr(y + height - 1, i, '━', curses_color)
+  for i in range(y + 1, y + height - 1):
+    stdscr.addstr(i, x, '┃', curses_color)
+    stdscr.addstr(i, max_x, '┃', curses_color)
 
   title = " Stopwatch "
   title_x = int((max_x + x - len(title)) / 2)
-  stdsrc.addstr(y, title_x, title, curses.color_pair(1))
+  stdscr.addstr(y, title_x, title, curses_color)
 
   if PAUSE:
     paused = " PAUSE "
     paused_x = int((max_x + x - len(paused)) / 2)
-    stdsrc.addstr(y + 8, paused_x, paused, curses.color_pair(1))
+    stdscr.addstr(y + 8, paused_x, paused, curses_color)
 
-def main(stdsrc):
+def main(stdscr):
   '''main for curses.wrapper()'''
-  global COLOR, PAUSE, START, COUNTDOWN, AUTO_EXIT
+  global ARGS, PAUSE, COLORS
 
   curses.noecho()
   curses.cbreak()
@@ -151,21 +147,16 @@ def main(stdsrc):
   curses.start_color()
   curses.use_default_colors()
 
-  stdsrc.keypad(1)
-  stdsrc.nodelay(1)
+  stdscr.keypad(1)
+  stdscr.nodelay(1)
 
-  colors = {'black': curses.COLOR_BLACK, 'blue': curses.COLOR_BLUE,
-      'cyan': curses.COLOR_CYAN, 'green': curses.COLOR_GREEN,
-      'magenta': curses.COLOR_MAGENTA, 'red': curses.COLOR_RED,
-      'white': curses.COLOR_WHITE, 'yellow': curses.COLOR_YELLOW,
-      'none': -1}
-  curses.init_pair(1, colors[COLOR], -1)
+  curses.init_pair(1, COLORS[ARGS.color], -1)
 
-  start, pause_begin, pause_delta = time.time(), None, 0
+  start, pause_begin, pause_delta = time.time(), time.time(), 0
   while RUNNING:
-    c = stdsrc.getch()
+    c = stdscr.getch()
     if c == ord('q') or c == ord('Q'):
-      return
+      return False
     if c == ord(' '):
       if not PAUSE:
         PAUSE, pause_begin = True, time.time()
@@ -178,21 +169,23 @@ def main(stdsrc):
     else:
       delta = max(time.time() - start - pause_delta, 0)
 
-    delta = START - delta if COUNTDOWN else START + delta
+    delta = ARGS.start - delta if ARGS.countdown else ARGS.start + delta
 
-    if COUNTDOWN and delta <= 0:
-      if AUTO_EXIT:
+    if ARGS.countdown and delta <= 0:
+      if ARGS.auto_exit:
         return True
       delta = 0
-      curses.init_pair(1, colors[COLOR_ZERO], -1)
+      curses.init_pair(1, COLORS[ARGS.color_zero], -1)
 
-    stdsrc.erase()
+    stdscr.erase()
     try:
-      render(delta, stdsrc)
+      render(delta, stdscr)
     except curses.error:
       pass
-    stdsrc.refresh()
+    stdscr.refresh()
     time.sleep(0.1)
+
+  return False
 
 def sig_handler(sig, frame):
   global RUNNING
@@ -202,20 +195,19 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(
       description="""Simple ncurses based terminal stopwatch.
 Press space to pause and q to exit.""",
-      prog='simple-stopwatch', add_help=False)
+      prog=os.path.basename(sys.argv[0]), add_help=False)
 
   parser.add_argument('--hours-always', dest='hours_always', action='store_true',
       default=False, help='display hours always')
 
-  parser.add_argument('--color', choices=['black', 'blue', 'cyan', 'green',
-      'magenta', 'red', 'white', 'yellow', 'none'], default='blue',
+  parser.add_argument('--color', choices=sorted(COLORS.keys()), default='blue',
       dest='color', help='the color to use')
 
   parser.add_argument('--center', dest='center', action='store_true',
       default=False, help='center stopwatch')
 
   parser.add_argument('--start-at', dest='start', default=0, metavar='TIME',
-      help='start with specified time either defined as seconds or in hh:mm:ss format')
+      help='start with specified time defined in hh:mm:ss format')
 
   parser.add_argument('--countdown', dest='countdown', action='store_true',
       default=False, help='use stopwatch as countdown timer')
@@ -223,49 +215,40 @@ Press space to pause and q to exit.""",
   parser.add_argument('--auto-exit', dest='auto_exit', action='store_true',
       default=False, help='auto exit if countdown reaches zero')
 
-  parser.add_argument('--color-zero', choices=['black', 'blue', 'cyan', 'green',
-      'magenta', 'red', 'white', 'yellow', 'none'], default='red',
-      dest='color_zero', help='the color to use if countdown reaches zero')
+  parser.add_argument('--color-zero', choices=sorted(COLORS.keys()),
+      default='red', dest='color_zero',
+      help='the color to use if countdown reaches zero')
 
   parser.add_argument('--help', action='help',
       help='show this help message and exit')
 
   parser.add_argument('--version', action='version',
-      version='%(prog)s ' + __version__)
+      version='%(prog)s 1.0.0')
 
-  args = parser.parse_args()
+  ARGS = parser.parse_args()
 
   if sys.version_info < (3, ):
     import locale
     locale.setlocale(locale.LC_ALL, '')
+    range = xrange
 
-  START = args.start
   try:
-    START = int(START)
+    ARGS.start = int(ARGS.start)
   except ValueError:
-    START = START.split(':')
-    if len(START) > 3 or any([not x.isdigit() for x in START]):
-      parser.print_help()
+    ARGS.start = ARGS.start.split(':')
+    if len(ARGS.start) > 3 or any(not x.isdigit() for x in ARGS.start):
+      sys.stdout.write("Invalid --start-at format\n")
       sys.exit(1)
 
-    START = ['00', '00'] + START
-    START = int(START[-1]) + (int(START[-2]) * 60) + (int(START[-3]) * 60 * 60)
-
-  HOURS_ALWAYS, COLOR, CENTER  = args.hours_always, args.color, args.center
-  COUNTDOWN, AUTO_EXIT = args.countdown, args.auto_exit
-  COLOR_ZERO = args.color_zero
+    ARGS.start = ['00', '00', '00'] + ARGS.start
+    ARGS.start = int(ARGS.start[-1]) + (int(ARGS.start[-2]) * 60) + \
+        (int(ARGS.start[-3]) * 60 * 60)
 
   for sig in (signal.SIGABRT, signal.SIGILL, signal.SIGINT, signal.SIGSEGV, signal.SIGTERM):
     signal.signal(sig, sig_handler)
 
-  ret = False
-  try:
-    ret = curses.wrapper(main)
-  except KeyboardInterrupt:
-    pass
-
-  if ret:
-    sys.stdout.write('finished...\n')
+  if curses.wrapper(main):
+    sys.stdout.write("Countdown finished...\n")
     sys.stdout.flush()
 
 # vim: ft=python ts=2 sts=2 sw=2 et:
