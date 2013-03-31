@@ -3,8 +3,9 @@ simple-stopwatch
 
 A very simple python3, ncurses based terminal stopwatch.
 
-simple-stopwatch is not designed to be as precisely as possible, but should be
-fine for simple tasks like measuring the time during a speech.
+simple-stopwatch is not designed to be as precisely as possible and does not
+support milliseconds precision, but should be fine for simple tasks like
+measuring the time during a speech.
 
 Installation
 ------------
@@ -23,19 +24,27 @@ Archlinux users can use the PKGBUILD-git file to create a package.
 Usage
 -----
 
-    $ simple-stopwatch --help
     usage: simple-stopwatch [--hours-always]
-                        [--color {black,blue,cyan,green,magenta,red,white,yellow,none}]
-                        [--center] [--help]
+                        [--color {black,blue,cyan,green,magenta,none,red,white,yellow}]
+                        [--center] [--start-at TIME] [--countdown]
+                        [--auto-exit]
+                        [--color-zero {black,blue,cyan,green,magenta,none,red,white,yellow}]
+                        [--help] [--version]
 
     Simple ncurses based terminal stopwatch. Press space to pause and q to exit.
 
     optional arguments:
         --hours-always        display hours always
-        --color {black,blue,cyan,green,magenta,red,white,yellow,none}
+        --color {black,blue,cyan,green,magenta,none,red,white,yellow}
                               the color to use
         --center              center stopwatch
+        --start-at TIME       start with specified time defined in hh:mm:ss format
+        --countdown           use stopwatch as countdown timer
+        --auto-exit           auto exit if countdown reaches zero
+        --color-zero {black,blue,cyan,green,magenta,none,red,white,yellow}
+                              the color to use if countdown reaches zero
         --help                show this help message and exit
+        --version             show program's version number and exit
 
 License
 -------
