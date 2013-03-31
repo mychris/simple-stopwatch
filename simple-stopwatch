@@ -23,6 +23,11 @@ import curses
 import sys
 import time
 
+try:
+  range = xrange
+except NameError:
+  pass
+
 __version__ = '1.0.0'
 
 NUMBERS = [
@@ -200,6 +205,10 @@ Press space to pause and q to exit.""",
       version='%(prog)s ' + __version__)
 
   args = parser.parse_args()
+
+  if sys.version_info < (3, ):
+    import locale
+    locale.setlocale(locale.LC_ALL, '')
 
   HOURS_ALWAYS, COLOR, CENTER = args.hours_always, args.color, args.center
   try:
