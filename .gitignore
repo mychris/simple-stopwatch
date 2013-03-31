@@ -2,4 +2,9 @@
 
 pkg/
 src/
+build/
+
 *.tar.xz
+
+*.egg
+*.egg-info
