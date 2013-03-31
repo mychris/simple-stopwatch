@@ -6,9 +6,12 @@ try:
 except ImportError:
   from distutils.core import setup
 
+import imp
+script = imp.load_source('simple_stopwatch', 'simple-stopwatch')
+
 setup(
   name='simple-stopwatch',
-  version='1.0.0',
+  version=script.__version__,
   description='Simple ncurses based terminal stopwatch',
   author='Christoph Göttschkes',
   author_email='just.mychris@googlemail.com',
