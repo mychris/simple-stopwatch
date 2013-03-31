@@ -193,14 +193,13 @@ Press space to pause and q to exit.""",
   parser.add_argument('--center', dest='center', action='store_true',
       default=False, help='center stopwatch')
 
-  parser.add_argument('--help', dest='help', action='store_true',
-      default=False, help='show this help message and exit')
+  parser.add_argument('--help', action='help',
+      help='show this help message and exit')
+
+  parser.add_argument('--version', action='version',
+      version='%(prog)s ' + __version__)
 
   args = parser.parse_args()
-
-  if args.help:
-    parser.print_help()
-    sys.exit()
 
   HOURS_ALWAYS, COLOR, CENTER = args.hours_always, args.color, args.center
   try:
