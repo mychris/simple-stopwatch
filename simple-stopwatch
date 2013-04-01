@@ -153,16 +153,22 @@ def main(stdscr):
   curses.init_pair(1, COLORS[ARGS.color], -1)
 
   start, pause_begin, pause_delta = time.time(), time.time(), 0
+  q, Q, r, R, space = ord('q'), ord('Q'), ord('r'), ord('R'), ord(' ')
   while RUNNING:
     c = stdscr.getch()
-    if c == ord('q') or c == ord('Q'):
-      return False
-    if c == ord(' '):
-      if not PAUSE:
-        PAUSE, pause_begin = True, time.time()
-      else:
-        PAUSE = False
-        pause_delta += time.time() - pause_begin
+    if c != -1:
+      if c == q or c == Q:
+        return False
+      elif c == r or c == R:
+        start = time.time()
+        pause_begin = start
+        pause_delta = 0
+      elif c == space:
+        if not PAUSE:
+          PAUSE, pause_begin = True, time.time()
+        else:
+          PAUSE = False
+          pause_delta += time.time() - pause_begin
 
     if PAUSE:
       delta = max(pause_begin - start - pause_delta, 0)
@@ -193,9 +199,11 @@ def sig_handler(sig, frame):
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
-      description="""Simple ncurses based terminal stopwatch.
-Press space to pause and q to exit.""",
-      prog=os.path.basename(sys.argv[0]), add_help=False)
+      description="""
+Simple ncurses based terminal stopwatch.
+Press space to pause, r to reset and q to exit.""".strip(),
+      prog=os.path.basename(sys.argv[0]), add_help=False,
+      formatter_class=argparse.RawTextHelpFormatter)
 
   parser.add_argument('--hours-always', dest='hours_always', action='store_true',
       default=False, help='display hours always')
@@ -223,7 +231,7 @@ Press space to pause and q to exit.""",
       help='show this help message and exit')
 
   parser.add_argument('--version', action='version',
-      version='%(prog)s 1.1.0')
+      version='%(prog)s 1.2.0')
 
   ARGS = parser.parse_args()
 

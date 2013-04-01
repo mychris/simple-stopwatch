@@ -8,7 +8,7 @@ except ImportError:
 
 setup(
   name='simple-stopwatch',
-  version='1.1.0',
+  version='1.2.0',
   description='Simple ncurses based terminal stopwatch',
   author='Christoph Göttschkes',
   author_email='just.mychris@googlemail.com',

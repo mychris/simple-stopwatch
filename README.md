@@ -12,26 +12,28 @@ Installation
 
 run
 
-    python setup.py install
+    # python setup.py install
 
 in the root directory of this repository.
 
-Archlinux users can use the PKGBUILD-git file to create a package.
+Arch Linux users can use the PKGBUILD-git file to create a package.
 
-    wget https://raw.github.com/mychris/simple-stopwatch/master/PKGBUILD-git
-    makepkg -p PKGBUILD-git
+    $ wget https://raw.github.com/mychris/simple-stopwatch/master/PKGBUILD-git
+    $ makepkg -p PKGBUILD-git
 
 Usage
 -----
 
+    $ simple-stopwatch --help
     usage: simple-stopwatch [--hours-always]
-                        [--color {black,blue,cyan,green,magenta,none,red,white,yellow}]
-                        [--center] [--start-at TIME] [--countdown]
-                        [--auto-exit]
-                        [--color-zero {black,blue,cyan,green,magenta,none,red,white,yellow}]
-                        [--help] [--version]
+                            [--color {black,blue,cyan,green,magenta,none,red,white,yellow}]
+                            [--center] [--start-at TIME] [--countdown]
+                            [--auto-exit]
+                            [--color-zero {black,blue,cyan,green,magenta,none,red,white,yellow}]
+                            [--help] [--version]
 
-    Simple ncurses based terminal stopwatch. Press space to pause and q to exit.
+    Simple ncurses based terminal stopwatch.
+    Press space to pause, r to reset and q to exit.
 
     optional arguments:
         --hours-always        display hours always
