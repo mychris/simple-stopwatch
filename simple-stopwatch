@@ -68,10 +68,13 @@ COLORS = {
   'white': curses.COLOR_WHITE, 'yellow': curses.COLOR_YELLOW, 'none': -1
 }
  
-PAUSE, RUNNING, ARGS = False, True, {}
+RUNNING, ARGS = True, None
 
 def render_char(char, stdscr, offset_y, offset_x):
-  '''Render one character'''
+  """Renders the specified character to stdscr at position offset_y, offset_x.
+  Character must be [0-9] or ':'
+  """
+
   global NUMBERS
 
   char = int(char) if char.isdigit() else 10
@@ -87,20 +90,21 @@ def render_char(char, stdscr, offset_y, offset_x):
     row += 1
   return col
 
-def render(delta, stdscr):
-  '''render the stdscr'''
-  global ARGS, PAUSE
+def render(delta, stdscr, hours_always=False, center=False, pause=False):
+  """Renders the stopwatch to stdscr. Delta is the time which will be rendered,
+  defined in milliseconds.
+  """
 
-  hours, minutes, seconds = (delta / 60 / 60), (delta / 60) % 60, (delta) % 60
+  hours, minutes, seconds = (delta / 3600), (delta / 60) % 60, delta % 60
 
-  if hours < 1 and not ARGS.hours_always:
+  if hours < 1 and not hours_always:
     output_string = '%02d:%02d' % (minutes, seconds)
   else:
     output_string = '%02d:%02d:%02d' if hours < 10 else '%d:%02d:%02d'
     output_string = output_string % (hours, minutes, seconds)
 
   height, width = 9, 2
-  if ARGS.center:
+  if center:
     width += output_string.count(':') * 2
     width += sum(x.isdigit() for x in output_string) * 6
     width += (len(output_string) + 1) * 2
@@ -132,14 +136,14 @@ def render(delta, stdscr):
   title_x = int((max_x + x - len(title)) / 2)
   stdscr.addstr(y, title_x, title, curses_color)
 
-  if PAUSE:
+  if pause:
     paused = " PAUSE "
     paused_x = int((max_x + x - len(paused)) / 2)
-    stdscr.addstr(y + 8, paused_x, paused, curses_color)
+    stdscr.addstr(y + height - 1, paused_x, paused, curses_color)
 
 def main(stdscr):
-  '''main for curses.wrapper()'''
-  global ARGS, PAUSE, COLORS
+  """main for curses.wrapper()"""
+  global ARGS, COLORS, RUNNING
 
   curses.noecho()
   curses.cbreak()
@@ -152,8 +156,8 @@ def main(stdscr):
 
   curses.init_pair(1, COLORS[ARGS.color], -1)
 
-  start, pause_begin, pause_delta = time.time(), time.time(), 0
   q, Q, r, R, space = ord('q'), ord('Q'), ord('r'), ord('R'), ord(' ')
+  start, pause_begin, pause_delta, pause = time.time(), time.time(), 0, False
   while RUNNING:
     c = stdscr.getch()
     if c != -1:
@@ -164,13 +168,13 @@ def main(stdscr):
         pause_begin = start
         pause_delta = 0
       elif c == space:
-        if not PAUSE:
-          PAUSE, pause_begin = True, time.time()
+        if not pause:
+          pause, pause_begin = True, time.time()
         else:
-          PAUSE = False
+          pause = False
           pause_delta += time.time() - pause_begin
 
-    if PAUSE:
+    if pause:
       delta = max(pause_begin - start - pause_delta, 0)
     else:
       delta = max(time.time() - start - pause_delta, 0)
@@ -185,7 +189,7 @@ def main(stdscr):
 
     stdscr.erase()
     try:
-      render(delta, stdscr)
+      render(delta, stdscr, ARGS.hours_always, ARGS.center, pause)
     except curses.error:
       pass
     stdscr.refresh()
@@ -214,7 +218,7 @@ Press space to pause, r to reset and q to exit.""".strip(),
   parser.add_argument('--center', dest='center', action='store_true',
       default=False, help='center stopwatch')
 
-  parser.add_argument('--start-at', dest='start', default=0, metavar='TIME',
+  parser.add_argument('--start-at', dest='start', default='0', metavar='<time>',
       help='start with specified time defined in hh:mm:ss format')
 
   parser.add_argument('--countdown', dest='countdown', action='store_true',
@@ -231,7 +235,7 @@ Press space to pause, r to reset and q to exit.""".strip(),
       help='show this help message and exit')
 
   parser.add_argument('--version', action='version',
-      version='%(prog)s 1.2.0')
+      version='%(prog)s version 1.2.0')
 
   ARGS = parser.parse_args()
 
@@ -240,17 +244,17 @@ Press space to pause, r to reset and q to exit.""".strip(),
     locale.setlocale(locale.LC_ALL, '')
     range = xrange
 
-  try:
-    ARGS.start = int(ARGS.start)
-  except ValueError:
-    ARGS.start = ARGS.start.split(':')
-    if len(ARGS.start) > 3 or any(not x.isdigit() for x in ARGS.start):
-      sys.stdout.write("Invalid --start-at format\n")
-      sys.exit(1)
+  orig_start_at = ARGS.start
+  ARGS.start = ARGS.start.split(':')
+  if len(ARGS.start) > 3 or any(not x.isdigit() for x in ARGS.start):
+    parser.print_help()
+    sys.stdout.write("\n%s: error: argument %s: invalid format '%s'\n" % \
+        (parser.prog, '--start-at', orig_start_at))
+    sys.exit(2)
 
-    ARGS.start = ['00', '00', '00'] + ARGS.start
-    ARGS.start = int(ARGS.start[-1]) + (int(ARGS.start[-2]) * 60) + \
-        (int(ARGS.start[-3]) * 60 * 60)
+  ARGS.start = ['00', '00', '00'] + ARGS.start
+  ARGS.start = int(ARGS.start[-1]) + (int(ARGS.start[-2]) * 60) + \
+      (int(ARGS.start[-3]) * 3600)
 
   for sig in (signal.SIGABRT, signal.SIGILL, signal.SIGINT, signal.SIGSEGV, signal.SIGTERM):
     signal.signal(sig, sig_handler)
