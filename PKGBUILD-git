@@ -1,6 +1,7 @@
 # Maintainer: mychris <just.mychris@googlemail.com>
-pkgname=python-simple-stopwatch-git
-pkgver=20130401
+pkgname=simple-stopwatch-git
+_gitname=simple-stopwatch
+pkgver=
 pkgrel=1
 pkgdesc="A very simple python3, ncurses based terminal stopwatch."
 arch=('any')
@@ -11,34 +12,16 @@ makedepends=('git' 'python-distribute')
 provides=('simple-stopwatch')
 conflicts=()
 options=(!emptydirs)
-source=()
-md5sums=()
-
-_gitroot=git://github.com/mychris/simple-stopwatch.git
-_gitname=simple-stopwatch
+source=('git://github.com/mychris/simple-stopwatch.git')
+md5sums=('SKIP')
 
 pkgver() {
-  cd "${srcdir}/${_gitname}"
-  git describe --always | sed 's/-/_/g;s/v//'
+  cd "$_gitname"
+  git describe --always | sed 's|-|.|g'
 }
 
 package() {
-  cd "$srcdir"
-  msg "Connecting to GIT server...."
-
-  if [ -d "${_gitname}" ]; then
-    cd "${_gitname}" && git pull origin
-    msg "The local files are updated."
-  else
-    git clone "${_gitroot}" "${_gitname}"
-  fi
-
-  msg "GIT checkout done or server timeout"
-  msg "Starting build..."
-
-  rm -rf "${srcdir}/${_gitname}-build"
-  git clone "${srcdir}/${_gitname}" "${srcdir}/${_gitname}-build"
-  cd "${srcdir}/${_gitname}-build"
+  cd "$_gitname"
 
   python3 setup.py install --root="${pkgdir}/" --optimize=1
   install -D -m644 LICENSE "${pkgdir}/usr/share/licenses/${_gitname}/LICENSE"
