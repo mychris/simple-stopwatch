@@ -1,7 +1,7 @@
 # Maintainer: mychris <just dot mychris funnychar googlemail dot com>
 pkgname=simple-stopwatch-git
 _gitname=simple-stopwatch
-pkgver=
+pkgver=1.2.0
 pkgrel=1
 pkgdesc="A very simple python3, ncurses based terminal stopwatch."
 arch=('any')
